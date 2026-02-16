@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: mrk-postgres
+    environment:
+      POSTGRES_DB: mrk_crm
+      POSTGRES_USER: mrk
+      POSTGRES_PASSWORD: mrk_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mrk -d mrk_crm"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: mrk-api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://mrk:mrk_secret@postgres:5432/mrk_crm
+      DATABASE_URL_SYNC: postgresql://mrk:mrk_secret@postgres:5432/mrk_crm
+      SECRET_KEY: ${SECRET_KEY:-super-secret-key-change-in-production}
+      STORAGE_PATH: /app/storage
+      CORS_ORIGINS: http://localhost:3000
+    volumes:
+      - ./storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: mrk-web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      INTERNAL_API_URL: http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -1,0 +1,41 @@
+import enum
+import uuid
+from datetime import datetime
+
+from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.database import Base
+
+
+class ActivityType(str, enum.Enum):
+    call = "call"
+    meeting = "meeting"
+    note = "note"
+    offer_sent = "offer_sent"
+
+
+class Activity(Base):
+    __tablename__ = "activities"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    lead_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("leads.id", ondelete="CASCADE"), nullable=False
+    )
+    type: Mapped[ActivityType] = mapped_column(
+        Enum(ActivityType, name="activity_type"), nullable=False
+    )
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # Relationships
+    lead = relationship("Lead", back_populates="activities")
+    creator = relationship("User", back_populates="activities")
