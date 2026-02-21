@@ -2,8 +2,8 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, func
+from sqlalchemy.dialects.postgresql import ENUM, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -31,7 +31,7 @@ class Offer(Base):
         Numeric(12, 2), nullable=True
     )
     status: Mapped[OfferStatus] = mapped_column(
-        Enum(OfferStatus, name="offer_status", create_type=False),
+        ENUM(OfferStatus, name="offer_status", create_type=False),
         nullable=False,
         default=OfferStatus.draft,
     )

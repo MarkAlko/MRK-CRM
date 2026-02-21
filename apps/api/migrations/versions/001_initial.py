@@ -9,12 +9,24 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import ENUM, UUID, JSONB
 
 revision: str = "001"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
+
+# ── Enum type references (create_type=False: we create them via raw SQL) ──
+user_role = ENUM("admin", "qualifier", "closer", name="user_role", create_type=False)
+lead_source = ENUM("meta_form", "landing_page", "manual", name="lead_source", create_type=False)
+lead_temperature = ENUM("hot", "warm", "cold", name="lead_temperature", create_type=False)
+lead_status = ENUM(
+    "new_lead", "initial_call_done", "fit_for_meeting", "meeting_scheduled",
+    "meeting_done", "offer_sent", "negotiation", "won", "lost", "irrelevant",
+    name="lead_status", create_type=False,
+)
+activity_type = ENUM("call", "meeting", "note", "offer_sent", name="activity_type", create_type=False)
+offer_status = ENUM("draft", "sent", "negotiation", "approved", "rejected", name="offer_status", create_type=False)
 
 
 def _create_enum_idempotent(name: str, values: list[str]) -> None:
@@ -47,7 +59,7 @@ def upgrade() -> None:
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("email", sa.String(255), unique=True, nullable=False),
         sa.Column("password_hash", sa.String(255), nullable=False),
-        sa.Column("role", sa.Enum("admin", "qualifier", "closer", name="user_role", create_type=False), nullable=False),
+        sa.Column("role", user_role, nullable=False),
         sa.Column("is_active", sa.Boolean(), default=True, nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
@@ -70,18 +82,14 @@ def upgrade() -> None:
         sa.Column("phone", sa.String(30), nullable=False),
         sa.Column("normalized_phone", sa.String(20), nullable=False),
         sa.Column("email", sa.String(255), nullable=True),
-        sa.Column("source", sa.Enum("meta_form", "landing_page", "manual", name="lead_source", create_type=False), nullable=False),
+        sa.Column("source", lead_source, nullable=False),
         sa.Column("campaign_name", sa.String(500), nullable=True),
         sa.Column("adset_name", sa.String(500), nullable=True),
         sa.Column("ad_name", sa.String(500), nullable=True),
         sa.Column("city", sa.String(255), nullable=True),
         sa.Column("street", sa.String(255), nullable=True),
-        sa.Column("temperature", sa.Enum("hot", "warm", "cold", name="lead_temperature", create_type=False), nullable=True),
-        sa.Column("status", sa.Enum(
-            "new_lead", "initial_call_done", "fit_for_meeting", "meeting_scheduled",
-            "meeting_done", "offer_sent", "negotiation", "won", "lost", "irrelevant",
-            name="lead_status", create_type=False
-        ), nullable=False),
+        sa.Column("temperature", lead_temperature, nullable=True),
+        sa.Column("status", lead_status, nullable=False),
         sa.Column("qualifier_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=True),
         sa.Column("closer_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=True),
         # Bot fields
@@ -135,7 +143,7 @@ def upgrade() -> None:
         "activities",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("lead_id", UUID(as_uuid=True), sa.ForeignKey("leads.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("type", sa.Enum("call", "meeting", "note", "offer_sent", name="activity_type", create_type=False), nullable=False),
+        sa.Column("type", activity_type, nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("created_by", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
@@ -148,7 +156,7 @@ def upgrade() -> None:
         sa.Column("lead_id", UUID(as_uuid=True), sa.ForeignKey("leads.id", ondelete="CASCADE"), nullable=False),
         sa.Column("file_path", sa.String(500), nullable=False),
         sa.Column("amount_estimated", sa.Numeric(12, 2), nullable=True),
-        sa.Column("status", sa.Enum("draft", "sent", "negotiation", "approved", "rejected", name="offer_status", create_type=False), nullable=False),
+        sa.Column("status", offer_status, nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False),
     )

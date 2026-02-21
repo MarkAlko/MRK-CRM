@@ -2,8 +2,8 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy.dialects.postgresql import ENUM, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -26,7 +26,7 @@ class Activity(Base):
         UUID(as_uuid=True), ForeignKey("leads.id", ondelete="CASCADE"), nullable=False
     )
     type: Mapped[ActivityType] = mapped_column(
-        Enum(ActivityType, name="activity_type", create_type=False), nullable=False
+        ENUM(ActivityType, name="activity_type", create_type=False), nullable=False
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[uuid.UUID] = mapped_column(
