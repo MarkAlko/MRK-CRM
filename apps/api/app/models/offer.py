@@ -31,7 +31,7 @@ class Offer(Base):
         Numeric(12, 2), nullable=True
     )
     status: Mapped[OfferStatus] = mapped_column(
-        Enum(OfferStatus, name="offer_status"),
+        Enum(OfferStatus, name="offer_status", create_type=False),
         nullable=False,
         default=OfferStatus.draft,
     )

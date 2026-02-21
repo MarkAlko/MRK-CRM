@@ -26,7 +26,7 @@ class Activity(Base):
         UUID(as_uuid=True), ForeignKey("leads.id", ondelete="CASCADE"), nullable=False
     )
     type: Mapped[ActivityType] = mapped_column(
-        Enum(ActivityType, name="activity_type"), nullable=False
+        Enum(ActivityType, name="activity_type", create_type=False), nullable=False
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[uuid.UUID] = mapped_column(

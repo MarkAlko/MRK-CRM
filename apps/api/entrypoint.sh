@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+echo "Running Alembic migrations..."
+alembic upgrade head
+
+echo "Ensuring default superuser exists..."
+python -m app.create_superuser
+
+echo "Starting application..."
+exec uvicorn app.main:app --host 0.0.0.0 --port 8000

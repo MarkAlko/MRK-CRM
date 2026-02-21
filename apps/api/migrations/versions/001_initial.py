@@ -17,29 +17,28 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _create_enum_idempotent(name: str, values: list[str]) -> None:
+    """Create a PostgreSQL ENUM type, ignoring if it already exists."""
+    values_sql = ", ".join(f"'{v}'" for v in values)
+    op.execute(
+        f"DO $$ BEGIN "
+        f"CREATE TYPE {name} AS ENUM ({values_sql}); "
+        f"EXCEPTION WHEN duplicate_object THEN NULL; "
+        f"END $$"
+    )
+
+
 def upgrade() -> None:
-    # Create enum types
-    user_role = sa.Enum("admin", "qualifier", "closer", name="user_role")
-    user_role.create(op.get_bind(), checkfirst=True)
-
-    lead_source = sa.Enum("meta_form", "landing_page", "manual", name="lead_source")
-    lead_source.create(op.get_bind(), checkfirst=True)
-
-    lead_temperature = sa.Enum("hot", "warm", "cold", name="lead_temperature")
-    lead_temperature.create(op.get_bind(), checkfirst=True)
-
-    lead_status = sa.Enum(
+    # Create enum types idempotently using PostgreSQL DO block
+    _create_enum_idempotent("user_role", ["admin", "qualifier", "closer"])
+    _create_enum_idempotent("lead_source", ["meta_form", "landing_page", "manual"])
+    _create_enum_idempotent("lead_temperature", ["hot", "warm", "cold"])
+    _create_enum_idempotent("lead_status", [
         "new_lead", "initial_call_done", "fit_for_meeting", "meeting_scheduled",
         "meeting_done", "offer_sent", "negotiation", "won", "lost", "irrelevant",
-        name="lead_status"
-    )
-    lead_status.create(op.get_bind(), checkfirst=True)
-
-    activity_type = sa.Enum("call", "meeting", "note", "offer_sent", name="activity_type")
-    activity_type.create(op.get_bind(), checkfirst=True)
-
-    offer_status = sa.Enum("draft", "sent", "negotiation", "approved", "rejected", name="offer_status")
-    offer_status.create(op.get_bind(), checkfirst=True)
+    ])
+    _create_enum_idempotent("activity_type", ["call", "meeting", "note", "offer_sent"])
+    _create_enum_idempotent("offer_status", ["draft", "sent", "negotiation", "approved", "rejected"])
 
     # Users table
     op.create_table(

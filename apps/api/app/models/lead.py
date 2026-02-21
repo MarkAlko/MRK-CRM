@@ -63,7 +63,7 @@ class Lead(Base):
     normalized_phone: Mapped[str] = mapped_column(String(20), nullable=False)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     source: Mapped[LeadSource] = mapped_column(
-        Enum(LeadSource, name="lead_source"), nullable=False, default=LeadSource.manual
+        Enum(LeadSource, name="lead_source", create_type=False), nullable=False, default=LeadSource.manual
     )
     campaign_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
     adset_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -71,10 +71,10 @@ class Lead(Base):
     city: Mapped[str | None] = mapped_column(String(255), nullable=True)
     street: Mapped[str | None] = mapped_column(String(255), nullable=True)
     temperature: Mapped[LeadTemperature | None] = mapped_column(
-        Enum(LeadTemperature, name="lead_temperature"), nullable=True
+        Enum(LeadTemperature, name="lead_temperature", create_type=False), nullable=True
     )
     status: Mapped[LeadStatus] = mapped_column(
-        Enum(LeadStatus, name="lead_status"),
+        Enum(LeadStatus, name="lead_status", create_type=False),
         nullable=False,
         default=LeadStatus.new_lead,
     )
