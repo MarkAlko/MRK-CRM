@@ -15,6 +15,6 @@ RUN mkdir -p /app/storage
 
 EXPOSE 8000
 
-RUN chmod +x /app/entrypoint.sh
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 CMD ["/app/entrypoint.sh"]
