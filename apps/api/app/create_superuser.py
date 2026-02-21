@@ -1,32 +1,37 @@
-"""Create default superuser if no users exist."""
+"""Create default superuser if it does not already exist."""
 import asyncio
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from app.database import async_session_factory
 from app.models.user import User, UserRole
 from app.services.auth import hash_password
 
+DEFAULT_ADMIN_EMAIL = "admin@mrk.co.il"
+DEFAULT_ADMIN_PASSWORD = "123456"
+
 
 async def create_default_superuser() -> None:
     async with async_session_factory() as db:
-        result = await db.execute(select(func.count()).select_from(User))
-        user_count = result.scalar_one()
+        result = await db.execute(
+            select(User).where(User.email == DEFAULT_ADMIN_EMAIL)
+        )
+        existing = result.scalar_one_or_none()
 
-        if user_count > 0:
-            print("Users already exist. Skipping superuser creation.")
+        if existing is not None:
+            print(f"Default superuser already exists: {DEFAULT_ADMIN_EMAIL}")
             return
 
         superuser = User(
             name="Admin",
-            email="admin@mrk.local",
-            password_hash=hash_password("123456"),
+            email=DEFAULT_ADMIN_EMAIL,
+            password_hash=hash_password(DEFAULT_ADMIN_PASSWORD),
             role=UserRole.admin,
             is_active=True,
         )
         db.add(superuser)
         await db.commit()
-        print("Default superuser created: admin@mrk.local")
+        print(f"Default superuser created: {DEFAULT_ADMIN_EMAIL}")
 
 
 if __name__ == "__main__":
